@@ -78,7 +78,8 @@ function build (schema, options) {
     options,
     refResolver: new RefResolver(),
     rootSchemaId: schema.$id || randomUUID(),
-    validatorSchemasIds: new Set()
+    validatorSchemasIds: new Set(),
+    validatorSchemaKeys: new Set(),
   }
 
   context.refResolver.addSchema(schema, context.rootSchemaId)
@@ -155,6 +156,10 @@ function build (schema, options) {
     for (const [schemaId, schema] of Object.entries(dependencies)) {
       validator.addSchema(schema, schemaId)
     }
+  }
+
+  for (const k of context.validatorSchemaKeys) {
+    validator.getSchema(k)
   }
 
   if (options.debugMode) {
@@ -841,6 +846,7 @@ function buildValue (context, location, input) {
     for (let index = 0; index < location.schema[type].length; index++) {
       const optionLocation = anyOfLocation.getPropertyLocation(index)
       const schemaRef = optionLocation.getSchemaRef()
+      context.validatorSchemaKeys.add(schemaRef)
       const nestedResult = buildValue(context, optionLocation, input)
       code += `
         ${index === 0 ? 'if' : 'else if'}(validator.validate("${schemaRef}", ${input}))
